@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Button,
+  Dimensions,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { Card } from '../components/Card';
 import { MainButton } from '../components/MainButton';
@@ -37,10 +39,17 @@ const renderListItem = (value, numberOfRound, length) => {
 };
 
 export const GameScreen = ({ userChoice, onGameOver }) => {
+  // ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+
   const initialGuess = generateRandomBetween(1, 100, userChoice);
   const [currentGuess, setCurrentGuess] = useState(initialGuess);
   const [pastGuesses, setPastGuesses] = useState([initialGuess.toString()]);
-
+  const [availableDeviceWidth, setAvailableDeviceWidth] = useState(
+    Dimensions.get('window').width
+  );
+  const [availableDeviceHeight, setAvailableDeviceHeight] = useState(
+    Dimensions.get('window').height
+  );
   const currentLow = useRef(1);
   const currentHigh = useRef(100);
 
@@ -49,6 +58,18 @@ export const GameScreen = ({ userChoice, onGameOver }) => {
       onGameOver(pastGuesses.length);
     }
   }, [currentGuess, userChoice, onGameOver]);
+
+  useEffect(() => {
+    const updateLayout = () => {
+      const { width, height } = Dimensions.get('window');
+      setAvailableDeviceWidth(width);
+      setAvailableDeviceHeight(height);
+    };
+    Dimensions.addEventListener('change', updateLayout);
+    return () => {
+      Dimensions.removeEventListener('change', updateLayout);
+    };
+  });
 
   const nextGuessHandler = (direction) => {
     if (
@@ -78,11 +99,48 @@ export const GameScreen = ({ userChoice, onGameOver }) => {
     ]);
   };
 
+  if (availableDeviceHeight < 500) {
+    return (
+      <View style={styles.screen}>
+        <Text style={DefaultStyles.bodyText}>Opponent's Guess</Text>
+        <View style={styles.controls}>
+          <MainButton onPress={() => nextGuessHandler('lower')}>
+            <Ionicons name={'md-remove'} size={24} color="white" />
+          </MainButton>
+          <NumberContainer>{currentGuess}</NumberContainer>
+          <MainButton onPress={() => nextGuessHandler('greater')}>
+            <Ionicons name={'md-add'} size={24} color="white" />
+          </MainButton>
+        </View>
+        <View style={styles.listContainer}>
+          {/* <ScrollView contentContainerStyle={styles.list}>
+          {pastGuesses.map((guess, id) =>
+            renderListItem(guess, pastGuesses.length - id)
+          )}
+        </ScrollView> */}
+          <FlatList
+            keyExtractor={(item) => item}
+            data={pastGuesses}
+            renderItem={({ item, index }) =>
+              renderListItem(item, index, pastGuesses.length)
+            }
+            contentContainerStyle={styles.list}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <Text style={DefaultStyles.bodyText}>Opponent's Guess</Text>
       <NumberContainer>{currentGuess}</NumberContainer>
-      <Card style={styles.btnContainer}>
+      <Card
+        style={{
+          ...styles.btnContainer,
+          marginTop: availableDeviceHeight > 600 ? 20 : 5,
+        }}
+      >
         <MainButton onPress={() => nextGuessHandler('lower')}>
           <Ionicons name={'md-remove'} size={24} color="white" />
         </MainButton>
@@ -118,14 +176,19 @@ const styles = StyleSheet.create({
   btnContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 20,
+    marginTop: Dimensions.get('window').height > 600 ? 20 : 10,
     width: 400,
     maxWidth: '90%',
   },
-
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '80%',
+  },
   listContainer: {
     flex: 1,
-    width: '60%',
+    width: Dimensions.get('window').width > 350 ? '60%' : '80%',
   },
   list: {
     flexGrow: 1,
