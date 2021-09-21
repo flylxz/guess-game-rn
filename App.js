@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { useFonts } from 'expo-font';
 // import * as Font from 'expo-font';
 
@@ -14,7 +14,7 @@ export default function App() {
   const [userNumber, setUserNumber] = useState(0);
   const [guessRound, setGuessRound] = useState(0);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     'open-sans': require('./assets/fonts/OpenSans-Regular.ttf'),
     'open-sans-bold': require('./assets/fonts/OpenSans-Bold.ttf'),
   });
@@ -53,11 +53,13 @@ export default function App() {
     return null;
   }
 
+  if (error) console.log('font error: ', error);
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Header title="Guess a number" />
       {content}
-    </View>
+    </SafeAreaView>
   );
 }
 
